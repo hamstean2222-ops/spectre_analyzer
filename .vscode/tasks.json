@@ -1,0 +1,49 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+ {
+      "label": "Start MLflow Server (noorm DB)",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": [
+        "/K",
+        "\"C:\\Users\\user\\miniconda3\\Scripts\\activate.bat\" && conda activate suka-cnn && mlflow server --backend-store-uri sqlite:///C:/Users/user/Desktop/noorm/mlflow.db --default-artifact-root file:///C:/Users/user/Desktop/noorm/mlruns --host 127.0.0.1 --port 5000"
+      ],
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Start JupyterLab",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": [
+        "/K",
+        "\"C:\\Users\\user\\miniconda3\\Scripts\\activate.bat\" && conda activate suka-cnn && jupyter lab"
+      ],
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Run Training",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": [
+        "/K",
+        "\"C:\\Users\\user\\miniconda3\\Scripts\\activate.bat\" && conda activate suka-cnn && python train.py"
+      ],
+      "presentation": { "reveal": "always", "panel": "new" }
+    }
+  ],
+  "compounds": [
+    {
+      "label": "Dev: Start All",
+      "dependsOn": [
+        "Start MLflow Server",
+        "Start JupyterLab",
+        "Run Training"
+      ]
+      // по умолчанию параллельно; если хотите строго по порядку:
+      // "dependsOrder": "sequence"
+    }
+  ]
+}
