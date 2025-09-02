@@ -132,7 +132,7 @@ class HDMIset(Dataset):
 # ──────────────────────────────────────────────────────────
 # Модель: DenseNet с SE-attention
 
-k                  = 16      # growth-rate
+k                  = 20      # growth-rate
 compression_factor = 0.5
 layers_per_block   = [6, 12, 32, 32]
 in_channels        = 3       # два канала (сырой + контраст)
@@ -231,6 +231,24 @@ class SpectroDenseNet(nn.Module):
         x = self.tail(x)
         return self.head(x)                 # [B,1] логиты
 
+
+class AsymmetricFocalLoss(nn.Module):
+    def __init__(self, gamma_pos=0.0, gamma_neg=2.0, clip=0.05, eps=1e-8):
+        super().__init__()
+        self.gp, self.gn = gamma_pos, gamma_neg
+        self.clip = clip
+        self.eps  = eps
+    def forward(self, logits, targets):
+        # logits, targets: [B]
+        x = torch.sigmoid(logits)
+        if self.clip is not None and self.clip > 0:
+            x = torch.clamp(x, self.clip, 1.0 - self.clip)
+        pt = x*targets + (1-x)*(1-targets)          # pt = p(y)
+        # разные гаммы на pos/neg
+        w = (1-pt).pow(self.gp)*targets + pt.pow(self.gn)*(1-targets)
+        # BCE
+        bce = - (targets*torch.log(x+self.eps) + (1-targets)*torch.log(1-x+self.eps))
+        return (w*bce).mean()
 # ──────────────────────────────────────────────────────────
 # Чекпоинты: чистое сохранение/загрузка
 
@@ -267,7 +285,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--npz", type=str, default="hdmi_windows_multiclass.npz")
     parser.add_argument("--epochs", type=int, default=12)
-    parser.add_argument("--batch", type=int, default=256)
+    parser.add_argument("--batch", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--split_hz", type=float, default=2.5e9)
@@ -459,7 +477,8 @@ def main():
     use_pos_weight = (not args.balance) and (args.pos_weight > 0.0)
     if use_pos_weight:
         pos_weight = torch.tensor([args.pos_weight], device=device)
-        criterion  = nn.BCEWithLogitsLoss(reduction='none', pos_weight=pos_weight)
+        #criterion  = nn.BCEWithLogitsLoss(reduction='none', pos_weight=pos_weight)
+        criterion  = AsymmetricFocalLoss(gamma_pos=0.0, gamma_neg=2.0, clip=0.05)
     else:
         criterion  = nn.BCEWithLogitsLoss(reduction='none')  # без pos_weight
 
