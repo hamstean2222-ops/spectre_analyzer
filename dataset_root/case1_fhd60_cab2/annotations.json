@@ -1,0 +1,541 @@
+{
+  "center_300MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 311.0,
+      "freq_end": 342.0,
+      "time_start": 0.11,
+      "time_end": 4.016,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_400MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 382.0,
+      "freq_end": 413.0,
+      "time_start": 0.114,
+      "time_end": 4.024,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 442.0,
+      "freq_end": 448.0,
+      "time_start": 0.114,
+      "time_end": 4.024,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 462.5,
+      "freq_end": 468.0,
+      "time_start": 0.109,
+      "time_end": 4.027,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 490.5,
+      "freq_end": 498.5,
+      "time_start": 0.109,
+      "time_end": 4.027,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 501.0,
+      "freq_end": 507.0,
+      "time_start": 0.109,
+      "time_end": 4.027,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 510.0,
+      "freq_end": 528.0,
+      "time_start": 0.109,
+      "time_end": 4.027,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 531.0,
+      "freq_end": 537.0,
+      "time_start": 0.109,
+      "time_end": 4.027,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 540.0,
+      "freq_end": 548.0,
+      "time_start": 0.109,
+      "time_end": 4.027,
+      "type": "SIGNAL_GOOD"
+    }
+  ],
+  "center_600MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 589.0,
+      "freq_end": 598.0,
+      "time_start": 0.108,
+      "time_end": 4.027,
+      "type": "SIGNAL_MAIN"
+    },
+    {
+      "freq_start": 561.0,
+      "freq_end": 566.0,
+      "time_start": 0.108,
+      "time_end": 4.027,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 640.0,
+      "freq_end": 646.0,
+      "time_start": 0.108,
+      "time_end": 4.027,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_700MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 738.0,
+      "freq_end": 745.4,
+      "time_start": 0.109,
+      "time_end": 4.024,
+      "type": "SIGNAL_MAIN"
+    },
+    {
+      "freq_start": 650.0,
+      "freq_end": 655.0,
+      "time_start": 0.109,
+      "time_end": 4.024,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 660.5,
+      "freq_end": 665.5,
+      "time_start": 0.109,
+      "time_end": 4.024,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 668.5,
+      "freq_end": 674.0,
+      "time_start": 0.109,
+      "time_end": 4.024,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 679.5,
+      "freq_end": 685.5,
+      "time_start": 0.109,
+      "time_end": 4.024,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 689.0,
+      "freq_end": 696.0,
+      "time_start": 0.109,
+      "time_end": 4.024,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_800MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 750.0,
+      "freq_end": 753.0,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 788.5,
+      "freq_end": 794.0,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 798.5,
+      "freq_end": 804.0,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 806.0,
+      "freq_end": 825.0,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 828.0,
+      "freq_end": 833.0,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 837.5,
+      "freq_end": 843.5,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 848.0,
+      "freq_end": 850.0,
+      "time_start": 0.109,
+      "time_end": 4.03,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_900MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 858.0,
+      "freq_end": 862.5,
+      "time_start": 0.111,
+      "time_end": 4.02,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 871.0,
+      "freq_end": 929.0,
+      "time_start": 0.111,
+      "time_end": 4.02,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 937.0,
+      "freq_end": 943.0,
+      "time_start": 0.111,
+      "time_end": 4.02,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 947.0,
+      "freq_end": 950.0,
+      "time_start": 0.111,
+      "time_end": 4.02,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_1000MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 950.0,
+      "freq_end": 952.0,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 968.0,
+      "freq_end": 975.0,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 977.0,
+      "freq_end": 982.0,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 986.0,
+      "freq_end": 991.5,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 996.0,
+      "freq_end": 1002.0,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1022.0,
+      "freq_end": 1029.0,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1035.0,
+      "freq_end": 1042.0,
+      "time_start": 0.114,
+      "time_end": 4.028,
+      "type": "SIGNAL_MAIN"
+    }
+  ],
+  "center_1100MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1050.0,
+      "freq_end": 1055.0,
+      "time_start": 0.108,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1085.0,
+      "freq_end": 1092.0,
+      "time_start": 0.108,
+      "time_end": 4.019,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 1094.5,
+      "freq_end": 1100.5,
+      "time_start": 0.108,
+      "time_end": 4.019,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 1123.5,
+      "freq_end": 1130.5,
+      "time_start": 0.108,
+      "time_end": 4.019,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_1200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1183.0,
+      "freq_end": 1191.0,
+      "time_start": 0.108,
+      "time_end": 4.026,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 1233.0,
+      "freq_end": 1239.0,
+      "time_start": 0.108,
+      "time_end": 4.026,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 1244.0,
+      "freq_end": 1248.0,
+      "time_start": 0.108,
+      "time_end": 4.026,
+      "type": "SIGNAL"
+    }
+  ],
+  "center_1300MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1283.0,
+      "freq_end": 1288.5,
+      "time_start": 0.106,
+      "time_end": 4.011,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 1272.0,
+      "freq_end": 1278.0,
+      "time_start": 0.106,
+      "time_end": 4.011,
+      "type": "SIGNAL"
+    },
+    {
+      "freq_start": 1332.0,
+      "freq_end": 1338.0,
+      "time_start": 0.106,
+      "time_end": 4.011,
+      "type": "SIGNAL_GOOD"
+    }
+  ],
+  "center_1400MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1350.0,
+      "freq_end": 1450.0,
+      "time_start": 0.109,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1480.0,
+      "freq_end": 1487.0,
+      "time_start": 0.111,
+      "time_end": 4.032,
+      "type": "SIGNAL_MAIN"
+    }
+  ],
+  "center_1600MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1550.0,
+      "freq_end": 1625.0,
+      "time_start": 0.114,
+      "time_end": 4.035,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1629.0,
+      "freq_end": 1634.5,
+      "time_start": 0.114,
+      "time_end": 4.035,
+      "type": "SIGNAL_GOOD"
+    }
+  ],
+  "center_1800MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1777.0,
+      "freq_end": 1784.0,
+      "time_start": 0.107,
+      "time_end": 4.012,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 1788.0,
+      "freq_end": 1850.0,
+      "time_start": 0.107,
+      "time_end": 4.012,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1900MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1850.0,
+      "freq_end": 1884.0,
+      "time_start": 0.108,
+      "time_end": 4.028,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1925.0,
+      "freq_end": 1932.5,
+      "time_start": 0.108,
+      "time_end": 4.028,
+      "type": "SIGNAL_MAIN"
+    }
+  ],
+  "center_2000MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1994.0,
+      "freq_end": 2007.0,
+      "time_start": 0.111,
+      "time_end": 4.037,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_2100MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2074.5,
+      "freq_end": 2080.0,
+      "time_start": 0.108,
+      "time_end": 4.016,
+      "type": "SIGNAL_MAIN"
+    },
+    {
+      "freq_start": 2123.5,
+      "freq_end": 2129.5,
+      "time_start": 0.108,
+      "time_end": 4.016,
+      "type": "SIGNAL_GOOD"
+    },
+    {
+      "freq_start": 2133.0,
+      "freq_end": 2139.5,
+      "time_start": 0.108,
+      "time_end": 4.016,
+      "type": "SIGNAL_GOOD"
+    }
+  ],
+  "center_2200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2223.0,
+      "freq_end": 2228.0,
+      "time_start": 0.107,
+      "time_end": 4.02,
+      "type": "SIGNAL"
+    }
+  ],
+  "center_2300MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2272.0,
+      "freq_end": 2277.5,
+      "time_start": 0.109,
+      "time_end": 4.02,
+      "type": "SIGNAL_NORMAL"
+    },
+    {
+      "freq_start": 2322.0,
+      "freq_end": 2326.5,
+      "time_start": 0.109,
+      "time_end": 4.02,
+      "type": "SIGNAL"
+    }
+  ],
+  "center_2400MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2371.0,
+      "freq_end": 2376.0,
+      "time_start": 0.108,
+      "time_end": 4.03,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_2500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2519.0,
+      "freq_end": 2525.0,
+      "time_start": 0.105,
+      "time_end": 4.016,
+      "type": "SIGNAL_NORMAL"
+    }
+  ],
+  "center_2800MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2816.0,
+      "freq_end": 2821.0,
+      "time_start": 0.106,
+      "time_end": 4.017,
+      "type": "SIGNAL"
+    }
+  ],
+  "center_3200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 3206.0,
+      "freq_end": 3214.0,
+      "time_start": 0.106,
+      "time_end": 4.029,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_3700MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 3664.0,
+      "freq_end": 3668.0,
+      "time_start": 0.107,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_4400MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 4395.0,
+      "freq_end": 4402.0,
+      "time_start": 0.106,
+      "time_end": 4.03,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_5200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 5190.0,
+      "freq_end": 5195.0,
+      "time_start": 0.106,
+      "time_end": 4.04,
+      "type": "SIGNAL"
+    }
+  ],
+  "center_5500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 5487.0,
+      "freq_end": 5492.0,
+      "time_start": 0.107,
+      "time_end": 4.076,
+      "type": "SIGNAL"
+    }
+  ]
+}

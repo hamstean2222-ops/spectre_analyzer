@@ -1,0 +1,279 @@
+{
+  "center_300MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 315.0,
+      "freq_end": 338.0,
+      "time_start": 0.109,
+      "time_end": 4.09,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_400MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 383.0,
+      "freq_end": 394.0,
+      "time_start": 0.111,
+      "time_end": 4.085,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 415.0,
+      "freq_end": 423.0,
+      "time_start": 0.111,
+      "time_end": 4.085,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 437.0,
+      "freq_end": 450.0,
+      "time_start": 0.111,
+      "time_end": 4.085,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 450.0,
+      "freq_end": 455.0,
+      "time_start": 0.108,
+      "time_end": 4.012,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 477.0,
+      "freq_end": 495.0,
+      "time_start": 0.108,
+      "time_end": 4.012,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 509.0,
+      "freq_end": 528.0,
+      "time_start": 0.108,
+      "time_end": 4.012,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_600MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 556.0,
+      "freq_end": 561.0,
+      "time_start": 0.109,
+      "time_end": 4.015,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 586.0,
+      "freq_end": 600.0,
+      "time_start": 0.109,
+      "time_end": 4.015,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 641.0,
+      "freq_end": 650.0,
+      "time_start": 0.109,
+      "time_end": 4.015,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_700MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 675.0,
+      "freq_end": 694.0,
+      "time_start": 0.11,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_800MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 806.0,
+      "freq_end": 827.0,
+      "time_start": 0.11,
+      "time_end": 4.018,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_900MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 850.0,
+      "freq_end": 857.0,
+      "time_start": 0.112,
+      "time_end": 4.018,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 900.0,
+      "freq_end": 926.0,
+      "time_start": 0.112,
+      "time_end": 4.018,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1000MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 967.0,
+      "freq_end": 998.0,
+      "time_start": 0.107,
+      "time_end": 4.024,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1100MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1050.0,
+      "freq_end": 1064.0,
+      "time_start": 0.106,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1077.0,
+      "freq_end": 1100.0,
+      "time_start": 0.106,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1113.0,
+      "freq_end": 1128.0,
+      "time_start": 0.106,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1223.0,
+      "freq_end": 1241.0,
+      "time_start": 0.109,
+      "time_end": 4.013,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1300MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1252.0,
+      "freq_end": 1271.0,
+      "time_start": 0.109,
+      "time_end": 4.012,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1400MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1440.0,
+      "freq_end": 1450.0,
+      "time_start": 0.111,
+      "time_end": 4.016,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1450.0,
+      "freq_end": 1462.0,
+      "time_start": 0.106,
+      "time_end": 4.019,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1600MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1550.0,
+      "freq_end": 1650.0,
+      "time_start": 0.11,
+      "time_end": 4.007,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1700MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1650.0,
+      "freq_end": 1750.0,
+      "time_start": 0.113,
+      "time_end": 4.032,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1800MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1755.0,
+      "freq_end": 1766.0,
+      "time_start": 0.108,
+      "time_end": 4.016,
+      "type": "NOISE_STRONG"
+    },
+    {
+      "freq_start": 1773.0,
+      "freq_end": 1801.0,
+      "time_start": 0.108,
+      "time_end": 4.016,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_1900MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1850.0,
+      "freq_end": 1950.0,
+      "time_start": 0.109,
+      "time_end": 4.021,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_2000MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 1950.0,
+      "freq_end": 1970.0,
+      "time_start": 0.112,
+      "time_end": 4.02,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_2100MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2129.0,
+      "freq_end": 2150.0,
+      "time_start": 0.108,
+      "time_end": 4.016,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_2200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2150.0,
+      "freq_end": 2162.0,
+      "time_start": 0.112,
+      "time_end": 4.014,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_2500MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 2496.0,
+      "freq_end": 2503.0,
+      "time_start": 0.111,
+      "time_end": 4.021,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_3200MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 3207.0,
+      "freq_end": 3213.0,
+      "time_start": 0.107,
+      "time_end": 4.013,
+      "type": "NOISE_STRONG"
+    }
+  ],
+  "center_3700MHz_span_100MHz_sweep_100ms.csv": [
+    {
+      "freq_start": 3664.0,
+      "freq_end": 3668.0,
+      "time_start": 0.108,
+      "time_end": 4.017,
+      "type": "NOISE_STRONG"
+    }
+  ]
+}
