@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 from pathlib import Path
 
 from proto import collect_dataset, init_model
@@ -15,9 +16,10 @@ init_model()
 def load_annotations(root: Path) -> pd.DataFrame:
     annot_path = root / "annotations.json"
     if annot_path.exists():
-        raw = pd.read_json(annot_path)
+        with annot_path.open() as f:
+            data = json.load(f)
         rows = []
-        for fname, ranges in raw.items():
+        for fname, ranges in data.items():
             for r in ranges:
                 rows.append({"file": fname, **r})
         return pd.DataFrame(rows)
