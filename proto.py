@@ -122,7 +122,9 @@ MIN_WIN_F       = 0.0       # (МГц) порог ширины диапазон�
 HIGH_THR        = 0.9
 LOW_THR         = 0.6
 
-result_dir      = r"C:\Users\user\Desktop\test\qhd60_old"
+# These will be initialised in the main block when running the script
+device: torch.device | None = None
+model: nn.Module | None = None
 
 def center_freq_key(p: pathlib.Path) -> int:
     """Возвращает центральную частоту из имени center_<freq>MHz_… ."""
@@ -345,20 +347,22 @@ def safe_load_state_dict(model: nn.Module, path: str, device):
         print(f"[warn] unexpected keys: {unexpected[:8]}{'...' if len(unexpected)>8 else ''}")
     return model
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model  = SpectroDenseNet().to(device)
-model  = safe_load_state_dict(model, "hdmi_cnn_best_ema.pth", device)
-model.eval()
+if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = SpectroDenseNet().to(device)
+    model = safe_load_state_dict(model, "hdmi_cnn_best_ema.pth", device)
+    model.eval()
 
-# sanity
-df = pd.read_csv(next(iter(sorted(pathlib.Path(result_dir).glob("*.csv")))))
-amps = df.iloc[:,1:].astype(float).to_numpy()
-stats = compute_file_stats(amps)
-x = make_batch(amps, 0, 0, WIN_T, WIN_F, stats=stats, device=device)
-with torch.no_grad():
-    p = model(x).sigmoid().item()
-print("first window prob:", p)
+    result_dir = pathlib.Path(r"C:\\Users\\user\\Desktop\\test\\qhd60_old")
 
-# классификация
-root = pathlib.Path(result_dir).resolve()
-collect_dataset(root)
+    # sanity
+    df = pd.read_csv(next(iter(sorted(result_dir.glob("*.csv")))))
+    amps = df.iloc[:, 1:].astype(float).to_numpy()
+    stats = compute_file_stats(amps)
+    x = make_batch(amps, 0, 0, WIN_T, WIN_F, stats=stats, device=device)
+    with torch.no_grad():
+        p = model(x).sigmoid().item()
+    print("first window prob:", p)
+
+    # классификация
+    collect_dataset(result_dir.resolve())
