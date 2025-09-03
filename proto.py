@@ -126,6 +126,27 @@ LOW_THR         = 0.6
 device: torch.device | None = None
 model: nn.Module | None = None
 
+
+def init_model(model_path: str = "hdmi_cnn_best_ema.pth",
+               device_name: str | None = None) -> None:
+    """Initialise global ``device`` and ``model``.
+
+    Parameters
+    ----------
+    model_path:
+        Path to the checkpoint with model weights.
+    device_name:
+        Optional name of the device. If not provided, CUDA is used when
+        available, otherwise CPU.
+    """
+
+    global device, model
+
+    device = torch.device(device_name or ("cuda" if torch.cuda.is_available() else "cpu"))
+    model = SpectroDenseNet().to(device)
+    safe_load_state_dict(model, model_path, device)
+    model.eval()
+
 def center_freq_key(p: pathlib.Path) -> int:
     """Возвращает центральную частоту из имени center_<freq>MHz_… ."""
     m = re.search(r'center_(\d+)MHz', p.name)
@@ -224,6 +245,9 @@ def save_avg_csv(freqs: np.ndarray,
 
 # проходим по csv файлам, ищем сигналы, пишем аннотацию
 def collect_dataset(root: pathlib.Path):
+    if model is None:
+        init_model()
+
     preds_json = defaultdict(list)
     
     # подпапка, куда кладём *_probs.csv
@@ -348,10 +372,7 @@ def safe_load_state_dict(model: nn.Module, path: str, device):
     return model
 
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = SpectroDenseNet().to(device)
-    model = safe_load_state_dict(model, "hdmi_cnn_best_ema.pth", device)
-    model.eval()
+    init_model()
 
     result_dir = pathlib.Path(r"C:\\Users\\user\\Desktop\\test\\qhd60_old")
 
