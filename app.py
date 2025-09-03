@@ -4,8 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from proto import collect_dataset
+from proto import collect_dataset, init_model
 from sbor import run_measurement_series
+
+
+# Initialise model once to avoid repeated loading
+init_model()
 
 
 def load_annotations(root: Path) -> pd.DataFrame:
