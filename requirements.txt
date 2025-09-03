@@ -7,3 +7,4 @@ scipy
 pyvisa
 scikit-learn
 tqdm
+pyarrow>=14,<15
