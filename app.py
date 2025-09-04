@@ -33,11 +33,19 @@ def show_visualisations(root: Path, file: str):
     times = df.iloc[:, 0].astype(float).to_numpy()
     amps = df.iloc[:, 1:].astype(float).to_numpy()
 
+    # Ensure the amplitude matrix has time along the first axis
+    if amps.shape[0] != len(times):
+        amps = amps.T
+
     fig, ax = plt.subplots()
-    ax.imshow(amps.T, aspect="auto", origin="lower",
-              extent=[times[0], times[-1], freqs[0], freqs[-1]])
-    ax.set_xlabel("Time, s")
-    ax.set_ylabel("Freq, MHz")
+    ax.imshow(
+        amps,
+        origin="lower",
+        aspect="auto",
+        extent=[freqs.min(), freqs.max(), times.min(), times.max()],
+    )
+    ax.set_xlabel("Freq, MHz")
+    ax.set_ylabel("Time, s")
     st.pyplot(fig)
 
     prob_path = root / "probs" / f"{Path(file).stem}_probs.csv"
