@@ -75,8 +75,19 @@ def main():
     else:
         result_dir = st.text_input("Папка с данными", str(Path("dataset_root")))
 
+    root = Path(result_dir)
+
+    if (root / "annotations.json").exists() and (root / "probs").is_dir():
+        if st.session_state.get("root") != str(root):
+            st.session_state["root"] = str(root)
+            st.session_state.pop("annots", None)
+            st.session_state.pop("idx", None)
+    elif st.session_state.get("root") == str(root):
+        st.session_state.pop("root")
+        st.session_state.pop("annots", None)
+        st.session_state.pop("idx", None)
+
     if st.button("Обработать"):
-        root = Path(result_dir)
         if mode == "Запустить сбор":
             try:
                 run_measurement_series(result_dir=result_dir)
@@ -84,6 +95,8 @@ def main():
                 st.error(str(e))
         collect_dataset(root)
         st.session_state["root"] = str(root)
+        st.session_state.pop("annots", None)
+        st.session_state.pop("idx", None)
 
     if "root" in st.session_state:
         root = Path(st.session_state["root"])
