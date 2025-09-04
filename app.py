@@ -99,9 +99,26 @@ def main():
         table_col, _ = st.columns([4, 1])
         table_col.dataframe(table_df, use_container_width=True)
 
-        file = st.selectbox("Выберите файл", files)
-        if file:
-            show_visualisations(root, file)
+        if "idx" not in st.session_state:
+            st.session_state.idx = 0
+
+        idx = st.session_state.idx
+        prev_col, select_col, next_col = st.columns([1, 4, 1])
+        with prev_col:
+            if st.button("◀") and idx > 0:
+                st.session_state.idx -= 1
+        with next_col:
+            if st.button("▶") and idx < len(files) - 1:
+                st.session_state.idx += 1
+
+        idx = st.session_state.idx
+        with select_col:
+            selected_file = st.selectbox("Выберите файл", files, index=idx)
+            st.session_state.idx = files.index(selected_file)
+
+        selected_file = files[st.session_state.idx]
+        if selected_file:
+            show_visualisations(root, selected_file)
 
 
 if __name__ == "__main__":
