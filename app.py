@@ -37,7 +37,7 @@ def show_visualisations(root: Path, file: str):
     if amps.shape[0] != len(times):
         amps = amps.T
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(14, 6))
     ax.imshow(
         amps,
         origin="lower",
@@ -46,16 +46,16 @@ def show_visualisations(root: Path, file: str):
     )
     ax.set_xlabel("Freq, MHz")
     ax.set_ylabel("Time, s")
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
 
     prob_path = root / "probs" / f"{Path(file).stem}_probs.csv"
     if prob_path.exists():
         prob_df = pd.read_csv(prob_path)
-        fig2, ax2 = plt.subplots()
+        fig2, ax2 = plt.subplots(figsize=(14, 6))
         ax2.plot(prob_df["freq_MHz"], prob_df["p_avg"])
         ax2.set_xlabel("Freq, MHz")
         ax2.set_ylabel("Probability")
-        st.pyplot(fig2)
+        st.pyplot(fig2, use_container_width=True)
 
 
 def main():
@@ -82,7 +82,8 @@ def main():
         annots = load_annotations(root)
         if not annots.empty:
             st.subheader("Аннотации")
-            st.dataframe(annots)
+            table_col, _ = st.columns([4, 1])
+            table_col.dataframe(annots, use_container_width=True)
             files = sorted(annots["file"].unique())
             file = st.selectbox("Выберите файл", files)
             if file:
