@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import json
 import re
 from pathlib import Path
@@ -34,7 +35,7 @@ def sort_key(name: str) -> int:
     return int(re.search(r"center_(\d+)MHz", name).group(1))
 
 
-def show_visualisations(root: Path, file: str):
+def show_visualisations(root: Path, file: str, annots: pd.DataFrame, show_rects: bool):
     csv_path = root / file
     df = pd.read_csv(csv_path)
     freqs = df.columns[1:].astype(float).to_numpy()
@@ -54,6 +55,20 @@ def show_visualisations(root: Path, file: str):
     )
     ax.set_xlabel("Freq, MHz")
     ax.set_ylabel("Time, s")
+
+    if show_rects:
+        file_annots = annots[annots["file"] == file]
+        for _, row in file_annots.dropna(subset=["time_start", "time_end", "freq_start", "freq_end"]).iterrows():
+            rect = Rectangle(
+                (row["freq_start"], row["time_start"]),
+                row["freq_end"] - row["freq_start"],
+                row["time_end"] - row["time_start"],
+                linewidth=2,
+                edgecolor="red",
+                facecolor="none",
+            )
+            ax.add_patch(rect)
+
     st.pyplot(fig, use_container_width=True)
 
     prob_path = root / "probs" / f"{Path(file).stem}_probs.csv"
@@ -63,6 +78,8 @@ def show_visualisations(root: Path, file: str):
         ax2.plot(prob_df["freq_MHz"], prob_df["p_avg"])
         ax2.set_xlabel("Freq, MHz")
         ax2.set_ylabel("Probability")
+        ax2.set_xlim(freqs.min(), freqs.max())
+        ax2.margins(x=0)
         st.pyplot(fig2, use_container_width=True)
 
 
@@ -106,9 +123,11 @@ def main():
         if not annots.empty:
             table_df = table_df.merge(annots, on="file", how="left")
 
+        display_df = table_df.drop(columns=["time_start", "time_end"], errors="ignore")
+
         st.subheader("Аннотации")
         table_col, _ = st.columns([4, 1])
-        df = table_df
+        df = display_df
         table_col.data_editor(df, key="annots", disabled=True, height=400)
 
         if "idx" not in st.session_state:
@@ -133,8 +152,9 @@ def main():
             st.session_state.idx = files.index(selected_file)
 
         selected_file = files[st.session_state.idx]
+        show_rects = st.checkbox("Показать сигналы", value=False)
         if selected_file:
-            show_visualisations(root, selected_file)
+            show_visualisations(root, selected_file, annots, show_rects)
 
 
 if __name__ == "__main__":
