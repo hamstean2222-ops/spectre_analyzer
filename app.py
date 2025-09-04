@@ -97,10 +97,15 @@ def main():
 
         st.subheader("Аннотации")
         table_col, _ = st.columns([4, 1])
-        table_col.dataframe(table_df, use_container_width=True)
+        df = table_df
+        table_col.data_editor(df, key="annots", disabled=True, height=400)
 
         if "idx" not in st.session_state:
             st.session_state.idx = 0
+
+        sel = st.session_state.annots["selected_rows"]
+        if sel:
+            st.session_state.idx = files.index(df.iloc[sel[0]]["file"])
 
         idx = st.session_state.idx
         prev_col, select_col, next_col = st.columns([1, 4, 1])
