@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import re
 from pathlib import Path
 
 from proto import collect_dataset, init_model
@@ -20,10 +21,17 @@ def load_annotations(root: Path) -> pd.DataFrame:
             data = json.load(f)
         rows = []
         for fname, ranges in data.items():
-            for r in ranges:
-                rows.append({"file": fname, **r})
+            if not ranges:
+                rows.append({"file": fname})
+            else:
+                for r in ranges:
+                    rows.append({"file": fname, **r})
         return pd.DataFrame(rows)
-    return pd.DataFrame()
+    return pd.DataFrame(columns=["file"])
+
+
+def sort_key(name: str) -> int:
+    return int(re.search(r"center_(\d+)MHz", name).group(1))
 
 
 def show_visualisations(root: Path, file: str):
@@ -80,14 +88,20 @@ def main():
     if "root" in st.session_state:
         root = Path(st.session_state["root"])
         annots = load_annotations(root)
+        all_files = [str(p.name) for p in root.glob("*.csv")]
+        files = sorted(all_files, key=sort_key)
+
+        table_df = pd.DataFrame({"file": files})
         if not annots.empty:
-            st.subheader("Аннотации")
-            table_col, _ = st.columns([4, 1])
-            table_col.dataframe(annots, use_container_width=True)
-            files = sorted(annots["file"].unique())
-            file = st.selectbox("Выберите файл", files)
-            if file:
-                show_visualisations(root, file)
+            table_df = table_df.merge(annots, on="file", how="left")
+
+        st.subheader("Аннотации")
+        table_col, _ = st.columns([4, 1])
+        table_col.dataframe(table_df, use_container_width=True)
+
+        file = st.selectbox("Выберите файл", files)
+        if file:
+            show_visualisations(root, file)
 
 
 if __name__ == "__main__":
