@@ -68,7 +68,10 @@ def show_visualisations(root: Path, file: str):
 
 def main():
     st.title("Сбор и анализ спектрограмм")
-    mode = st.radio("Режим", ["Запустить сбор", "Выбрать папку"])
+    mode = st.radio(
+        "Режим",
+        ["Запустить сбор", "Обработать папку", "Только вывод"],
+    )
 
     if mode == "Запустить сбор":
         result_dir = st.text_input("Папка для сохранения", "measurments")
@@ -77,17 +80,12 @@ def main():
 
     root = Path(result_dir)
 
-    if (root / "annotations.json").exists() and (root / "probs").is_dir():
-        if st.session_state.get("root") != str(root):
+    if mode == "Только вывод":
+        if st.button("Показать"):
             st.session_state["root"] = str(root)
             st.session_state.pop("annots", None)
             st.session_state.pop("idx", None)
-    elif st.session_state.get("root") == str(root):
-        st.session_state.pop("root")
-        st.session_state.pop("annots", None)
-        st.session_state.pop("idx", None)
-
-    if st.button("Обработать"):
+    elif st.button("Обработать"):
         if mode == "Запустить сбор":
             try:
                 run_measurement_series(result_dir=result_dir)
@@ -116,7 +114,7 @@ def main():
         if "idx" not in st.session_state:
             st.session_state.idx = 0
 
-        sel = st.session_state.annots["selected_rows"]
+        sel = st.session_state.annots.get("selected_rows", [])
         if sel:
             st.session_state.idx = files.index(df.iloc[sel[0]]["file"])
 
