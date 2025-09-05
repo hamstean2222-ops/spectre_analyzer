@@ -69,7 +69,7 @@ def show_visualisations(root: Path, file: str, annots: pd.DataFrame, show_rects:
             )
             ax.add_patch(rect)
 
-    st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, width='stretch')
 
     prob_path = root / "probs" / f"{Path(file).stem}_probs.csv"
     if prob_path.exists():
@@ -80,7 +80,7 @@ def show_visualisations(root: Path, file: str, annots: pd.DataFrame, show_rects:
         ax2.set_ylabel("Probability")
         ax2.set_xlim(freqs.min(), freqs.max())
         ax2.margins(x=0)
-        st.pyplot(fig2, use_container_width=True)
+        st.pyplot(fig2, width='stretch')
 
 
 def main():
