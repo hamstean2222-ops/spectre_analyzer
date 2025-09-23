@@ -14,7 +14,7 @@ from collections import OrderedDict
 k                  = 20      # growth-rate
 compression_factor = 0.5
 layers_per_block   = [6, 12, 32, 32]
-in_channels        = 3       # === NEW: два канала (сырой + контраст)
+in_channels        = 4       # три нормализованных канала + частотная сетка
 
 class SE(nn.Module):
     def __init__(self, c, r=8):
@@ -183,7 +183,7 @@ def detect_ranges(csv_path: pathlib.Path):
 
     for t0 in range(0, len(times) - WIN_T + 1, STRIDE_T):
         for f0 in range(0, len(freqs) - WIN_F + 1, STRIDE_F):
-            x = make_batch(amps, t0, f0, WIN_T, WIN_F, stats=stats, device=device)
+            x = make_batch(amps, t0, f0, WIN_T, WIN_F, stats=stats, device=device, freqs_mhz=freqs)
             with torch.no_grad():
                 p = model(x).sigmoid().item()
             if p > THR_P:
@@ -305,10 +305,19 @@ def hysteresis_segmentation(avg: np.ndarray,
             final.append((f0, f1))
     return final
 
-def make_batch(amps, t0, f0, WIN_T=16, WIN_F=128, stats=None, device="cpu"):
+def make_batch(amps, t0, f0, WIN_T=16, WIN_F=128, stats=None, device="cpu", freqs_mhz=None):
     t1, f1 = t0 + WIN_T, f0 + WIN_F
     win = torch.tensor(amps[t0:t1, f0:f1], dtype=torch.float32, device=device)  # (T,F)
     x0  = win.unsqueeze(0)  # (1,T,F)
+    T   = x0.shape[-2]
+
+    freq_channel = None
+    if freqs_mhz is not None:
+        freq_slice = freqs_mhz[f0:f1]
+        freq_tensor = torch.as_tensor(freq_slice, dtype=torch.float32, device=device)
+        if freq_tensor.numel() == WIN_F:
+            freq_norm = ((freq_tensor - 50.0) / 6000.0).clamp_(0.0, 1.0)
+            freq_channel = freq_norm.view(1, 1, WIN_F).expand(-1, T, -1)
 
     if stats is not None:
         mu, sigma = stats["mu"], stats["sigma"]
@@ -342,7 +351,11 @@ def make_batch(amps, t0, f0, WIN_T=16, WIN_F=128, stats=None, device="cpu"):
 
         ch2 = (z - z.mean()) / (z.std() + 1e-6)
 
-    x = torch.cat([ch0, ch1, ch2], dim=0).unsqueeze(0)  # (1,3,T,F)
+    if freq_channel is None:
+        freq_channel = torch.zeros(1, T, WIN_F, dtype=torch.float32, device=device)
+    freq_channel = freq_channel.to(x0.dtype)
+
+    x = torch.cat([ch0, ch1, ch2, freq_channel], dim=0).unsqueeze(0)  # (1,4,T,F)
     return x
 
 
@@ -379,8 +392,9 @@ if __name__ == "__main__":
     # sanity
     df = pd.read_csv(next(iter(sorted(result_dir.glob("*.csv")))))
     amps = df.iloc[:, 1:].astype(float).to_numpy()
+    freqs = df.columns[1:].astype(float).to_numpy()
     stats = compute_file_stats(amps)
-    x = make_batch(amps, 0, 0, WIN_T, WIN_F, stats=stats, device=device)
+    x = make_batch(amps, 0, 0, WIN_T, WIN_F, stats=stats, device=device, freqs_mhz=freqs)
     with torch.no_grad():
         p = model(x).sigmoid().item()
     print("first window prob:", p)

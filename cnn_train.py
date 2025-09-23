@@ -24,10 +24,11 @@ class HDMIset(Dataset):
         self.f0      = f0.astype(np.float32)
 
         # имена файлов и статистики для глобальной нормализации
-        self.fnames  = np.array([m[0] for m in meta], dtype=object)
+        self.meta    = np.asarray(meta, dtype=object)
+        self.fnames  = np.array([m[0] for m in self.meta], dtype=object)
         # если meta нового формата: (fname, t_idx, f_idx, f0_MHz, f1_MHz)
         # если старого — поставим -1 и уйдём в локальную нормализацию
-        self.f_idx   = np.array([ (int(m[2]) if len(m) >= 5 else -1) for m in meta ], dtype=int)
+        self.f_idx   = np.array([ (int(m[2]) if len(m) >= 5 else -1) for m in self.meta ], dtype=int)
         self.stats   = file_stats or {}
 
         # базовая нормировка доменных весов
@@ -48,44 +49,52 @@ class HDMIset(Dataset):
     def __len__(self):  return len(self.y_hard)
 
     def _augment_window(self, x2):
-        # x2: (2, 16, 128)
+        # x2: (C, T, F)
+        if x2.shape[0] > 3:
+            feat, freq = x2[:-1], x2[-1:].clone()
+        else:
+            feat, freq = x2, None
+
         if random.random() < 0.5:
             dt = random.randint(-2, 2)
-            if dt != 0: x2 = torch.roll(x2, shifts=dt, dims=-2)  # time
+            if dt != 0: feat = torch.roll(feat, shifts=dt, dims=-2)  # time
         if random.random() < 0.5:
             df = random.randint(-6, 6)
-            if df != 0: x2 = torch.roll(x2, shifts=df, dims=-1)  # freq
+            if df != 0: feat = torch.roll(feat, shifts=df, dims=-1)  # freq
         if random.random() < 0.3:
             w_t = random.randint(1, 2)
-            t0  = random.randint(0, x2.shape[-2]-w_t)
-            x2[:, t0:t0+w_t, :] = 0.0
+            t0  = random.randint(0, feat.shape[-2]-w_t)
+            feat[:, t0:t0+w_t, :] = 0.0
         if random.random() < 0.3:
             w_f = random.randint(3, 6)
-            f0  = random.randint(0, x2.shape[-1]-w_f)
-            x2[:, :, f0:f0+w_f] = 0.0
+            f0  = random.randint(0, feat.shape[-1]-w_f)
+            feat[:, :, f0:f0+w_f] = 0.0
         if random.random() < 0.8:
-            x2 = x2 + 0.02 * torch.randn_like(x2)
+            feat = feat + 0.02 * torch.randn_like(feat)
         # baseline drift по частоте (широкополосный, как «пузырь»)
         if random.random() < 0.5:
-            F = x2.shape[-1]
-            f = torch.linspace(0, 1, F, device=x2.device)
+            F = feat.shape[-1]
+            f = torch.linspace(0, 1, F, device=feat.device)
             drift = (0.15 * (torch.sin(2*3.1415*(random.uniform(0.2,0.6)*f + random.random())))).view(1,1,-1)
-            x2 = x2 + drift
+            feat = feat + drift
 
         # редкие импульсы (по времени) — мимик шум-тык
         if random.random() < 0.3:
             k = random.randint(1, 3)
             for _ in range(k):
-                t = random.randrange(x2.shape[-2])
-                x2[:, t:t+1, :] += 0.5*torch.randn(1,1,x2.shape[-1], device=x2.device)
+                t = random.randrange(feat.shape[-2])
+                feat[:, t:t+1, :] += 0.5*torch.randn(1,1,feat.shape[-1], device=feat.device)
 
         # «штрихи» по частоте (тонкие вертикальные полоски)
         if random.random() < 0.4:
             k = random.randint(1, 3)
             for _ in range(k):
-                f = random.randrange(x2.shape[-1])
-                x2[:, :, f:f+1] += torch.randn(1, x2.shape[-2], 1, device=x2.device) * 0.2
-        return x2
+                f = random.randrange(feat.shape[-1])
+                feat[:, :, f:f+1] += torch.randn(1, feat.shape[-2], 1, device=feat.device) * 0.2
+
+        if freq is not None:
+            return torch.cat([feat, freq], dim=0)
+        return feat
 
     def __getitem__(self, i):
         x  = torch.tensor(self.X[i], dtype=torch.float32)            # (1,T,Fwin)
@@ -96,8 +105,28 @@ class HDMIset(Dataset):
 
         fname = self.fnames[i]
         stats = self.stats.get(fname, None)
+        T     = x.shape[-2]
         Fwin  = x.shape[-1]
         f0i   = int(self.f_idx[i])
+
+        meta_i = self.meta[i]
+        meta_i = meta_i.tolist() if isinstance(meta_i, np.ndarray) else meta_i
+        freq_lo_mhz = freq_hi_mhz = None
+        if isinstance(meta_i, (list, tuple)):
+            if len(meta_i) >= 5:
+                freq_lo_mhz = float(meta_i[3])
+                freq_hi_mhz = float(meta_i[4])
+            elif len(meta_i) >= 4:
+                freq_lo_mhz = float(meta_i[2]) / 1e6
+                freq_hi_mhz = float(meta_i[3]) / 1e6
+        if freq_lo_mhz is None:
+            freq_lo_mhz = float(self.f0[i]) / 1e6
+        if freq_hi_mhz is None:
+            freq_hi_mhz = freq_lo_mhz
+
+        freq_lin = torch.linspace(freq_lo_mhz, freq_hi_mhz, steps=Fwin, device=x.device, dtype=torch.float32)
+        freq_norm = ((freq_lin - 50.0) / 6000.0).clamp_(0.0, 1.0)
+        freq_channel = freq_norm.view(1, 1, Fwin).expand(-1, T, -1)
 
         if (stats is not None) and (f0i >= 0) and (f0i + Fwin <= len(stats["q20"])):
             # по-файловая стандартизация
@@ -119,7 +148,8 @@ class HDMIset(Dataset):
             ch1 = torch.relu(z); ch1 = ch1 / (ch1.std() + 1e-6)
             ch2 = (z - z.mean()) / (z.std() + 1e-6)
 
-        x2 = torch.cat([ch0, ch1, ch2], dim=0)         # (3,T,Fwin)
+        freq_channel = freq_channel.to(x.dtype)
+        x2 = torch.cat([ch0, ch1, ch2, freq_channel], dim=0)         # (4,T,Fwin)
 
         if self.augment:
             x2 = self._augment_window(x2)
@@ -135,7 +165,7 @@ class HDMIset(Dataset):
 k                  = 20      # growth-rate
 compression_factor = 0.5
 layers_per_block   = [6, 12, 32, 32]
-in_channels        = 3       # два канала (сырой + контраст)
+in_channels        = 4       # три нормализованных канала + частотная сетка
 
 class SE(nn.Module):
     def __init__(self, c, r=8):
@@ -569,7 +599,7 @@ def main():
     with mlflow.start_run(run_name=run_name):
         mlflow.log_params({
             "arch": "SpectroDenseNet+SE+dilated",
-            "in_channels": 2,
+            "in_channels": 4,
             "lr": lr,
             "weight-decay": weight_decay,
             "epochs": EPOCHS,
