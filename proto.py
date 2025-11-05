@@ -11,9 +11,9 @@ from collections import defaultdict
 import re
 from collections import OrderedDict
 
-k                  = 20      # growth-rate
+k                  = 32      # growth-rate
 compression_factor = 0.5
-layers_per_block   = [6, 12, 32, 32]
+layers_per_block   = [6, 12, 24, 16]
 in_channels        = 3       # === NEW: два канала (сырой + контраст)
 
 class SE(nn.Module):
@@ -374,7 +374,7 @@ def safe_load_state_dict(model: nn.Module, path: str, device):
 if __name__ == "__main__":
     init_model()
 
-    result_dir = pathlib.Path(r"C:\\Users\\user\\Desktop\\test\\qhd60_old")
+    result_dir = pathlib.Path(r"C:\Users\user\Desktop\test\case3_fhd60_cab2")
 
     # sanity
     df = pd.read_csv(next(iter(sorted(result_dir.glob("*.csv")))))
