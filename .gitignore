@@ -3,3 +3,4 @@ mlruns
 .vscode
 .ipynb_checkpoints
 mlflow.dbf
+packages
