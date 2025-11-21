@@ -1,6 +1,7 @@
 # prep_windows_soft.py
 import json, pathlib, random, numpy as np, pandas as pd
 from tqdm import tqdm
+from proto import center_freq_key
 
 ROOT   = pathlib.Path("dataset_root")
 OUT    = "hdmi_windows_multiclass.npz"
@@ -81,8 +82,11 @@ for case in sorted(ROOT.iterdir()):
     if not case.is_dir(): continue
     ann = json.load(open(case/"annotations.json", "r", encoding="utf-8")) if (case/"annotations.json").exists() else {}
     file_stats = {}
+    case_files = sorted(case.glob("*.csv"), key=center_freq_key)
 
-    for csv in tqdm(sorted(case.glob("*.csv")), desc=case.name):
+    # --- загрузка и преподсчёты по файлам ---
+    loaded = []
+    for csv in tqdm(case_files, desc=case.name):
         t, f, a = load_trace(csv)
         fname_key = f"{case.name}/{csv.name}"   # ← уникальное имя для мета/статистик
 
@@ -104,20 +108,76 @@ for case in sorted(ROOT.iterdir()):
 
         m_main, m_sub, m_noise, qual_ranges, main_ranges, noise_ranges = \
             build_masks(f, ann.get(csv.name, []))
-        # «эрозия» сигнала на ±M_SHRINK
-        #sig_ranges  = [shrink_range(lo, hi, M_SHRINK) for (lo, hi) in sig_ranges]
-        #main_ranges = [shrink_range(lo, hi, M_SHRINK) for (lo, hi) in main_ranges]
+
+        loaded.append({
+            "path": csv,
+            "fname_key": fname_key,
+            "times": t,
+            "freqs": f,
+            "amps": a,
+            "m_main": m_main,
+            "m_sub": m_sub,
+            "m_noise": m_noise,
+            "qual_ranges": qual_ranges,
+            "main_ranges": main_ranges,
+            "noise_ranges": noise_ranges,
+        })
+
+    # --- проход по окнам ---
+    for idx, data in enumerate(loaded):
+        next_data = loaded[idx + 1] if idx + 1 < len(loaded) else None
+
+        t, f, a = data["times"], data["freqs"], data["amps"]
+        m_main, m_sub, m_noise = data["m_main"], data["m_sub"], data["m_noise"]
+        qual_ranges = data["qual_ranges"]
+        main_ranges = data["main_ranges"]
+        noise_ranges = data["noise_ranges"]
+        fname_key = data["fname_key"]
 
         for t0 in range(0, len(t)-WIN_T+1, STRIDE_T):
-            for f0 in range(0, len(f)-WIN_F+1, STRIDE_F):
+            f0 = 0
+            while f0 < len(f):
                 f1 = f0 + WIN_F
-                win_lo, win_hi = float(f[f0]), float(f[f1-1])
+                use_next = f1 > len(f)
+
+                if not use_next:
+                    win_f = f[f0:f1]
+                    win_a = a[t0:t0+WIN_T, f0:f1]
+                    win_m_main  = m_main [f0:f1]
+                    win_m_sub   = m_sub  [f0:f1]
+                    win_m_noise = m_noise[f0:f1]
+                    win_qual_ranges  = qual_ranges
+                    win_noise_ranges = noise_ranges
+                else:
+                    if next_data is None:
+                        break
+                    missing = f1 - len(f)
+                    if len(next_data["freqs"]) < missing:
+                        break
+                    if len(next_data["times"]) < t0 + WIN_T:
+                        break
+
+                    nf, na = next_data["freqs"], next_data["amps"]
+                    nm_main, nm_sub, nm_noise = next_data["m_main"], next_data["m_sub"], next_data["m_noise"]
+
+                    win_f = np.concatenate([f[f0:], nf[:missing]])
+                    win_a = np.concatenate([
+                        a[t0:t0+WIN_T, f0:],
+                        na[t0:t0+WIN_T, :missing]
+                    ], axis=1)
+                    win_m_main  = np.concatenate([m_main[f0:], nm_main[:missing]])
+                    win_m_sub   = np.concatenate([m_sub [f0:], nm_sub [:missing]])
+                    win_m_noise = np.concatenate([m_noise[f0:], nm_noise[:missing]])
+                    win_qual_ranges  = qual_ranges + next_data["qual_ranges"]
+                    win_noise_ranges = noise_ranges + next_data["noise_ranges"]
+
+                win_lo, win_hi = float(win_f[0]), float(win_f[-1])
                 Ww = win_hi - win_lo
                 min_overlap = TAU_WIN*Ww
 
                 # --- лучший сигнал (макс. перекрытие, при равенстве — выше качество)
                 best_Wo, best_Ws, best_q = 0.0, 1.0, QUALITY["SIGNAL"]
-                for (s_lo, s_hi, qvis) in qual_ranges:
+                for (s_lo, s_hi, qvis) in win_qual_ranges:
                     Ws = max(0.0, s_hi - s_lo)
                     if Ws <= 0: continue
                     Wo = overlap_len(win_lo, win_hi, s_lo, s_hi)
@@ -126,7 +186,7 @@ for case in sorted(ROOT.iterdir()):
 
                 # шум внутри окна (в МГц) как было
                 Wn = 0.0
-                for (n_lo, n_hi) in noise_ranges:
+                for (n_lo, n_hi) in win_noise_ranges:
                     Wn += overlap_len(win_lo, win_hi, n_lo, n_hi)
 
                 # доли покрытия
@@ -164,9 +224,9 @@ for case in sorted(ROOT.iterdir()):
                     yS = max(0.0, r)
 
                 # --- веса
-                ov_main = m_main[f0:f1].sum()
-                ov_sub  = m_sub [f0:f1].sum()
-                ov_noise= m_noise[f0:f1].sum()
+                ov_main = win_m_main.sum()
+                ov_sub  = win_m_sub .sum()
+                ov_noise= win_m_noise.sum()
                 frac_main  = ov_main / WIN_F
                 frac_sub   = ov_sub  / WIN_F
                 frac_noise = ov_noise/ WIN_F
@@ -188,17 +248,19 @@ for case in sorted(ROOT.iterdir()):
                         weight = MAX_W * (1.0 + (NOISE_W - 1.0) * min(frac_noise / 0.5, 1.0))
                     else:
                         if random.random() > KEEP_BG_PROB:
+                            f0 += STRIDE_F
                             continue
                         weight = MIN_W
 
-
                 # --- накопление ---
-                sl = a[t0:t0+WIN_T, f0:f1][None].astype("float32")
+                sl = win_a[None].astype("float32")
                 X.append(sl)
                 y_hard.append(yH)
                 y_soft.append(float(yS))
                 w.append(float(weight))
-                meta.append((fname_key, int(t0), int(f0), float(f[f0]), float(f[f1-1])))
+                meta.append((fname_key, int(t0), int(f0), float(win_f[0]), float(win_f[-1])))
+
+                f0 += STRIDE_F
 
 X      = np.stack(X).astype("float32")        # (N,1,16,128)
 y_hard = np.asarray(y_hard, dtype=np.uint8)
