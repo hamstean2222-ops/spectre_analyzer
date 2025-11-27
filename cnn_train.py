@@ -1,5 +1,6 @@
 import os, json, hashlib, numpy as np, torch, pathlib, argparse, random
 from torch.utils.data import Dataset, DataLoader, Subset, WeightedRandomSampler
+import torch.multiprocessing as mp
 from sklearn.model_selection import GroupShuffleSplit
 import torch.nn as nn
 from typing import Type, List, Union
@@ -143,15 +144,15 @@ class SE(nn.Module):
         super().__init__()
         self.seq = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(c, c//r, 1, bias=True),
+            nn.Conv2d(c, c//r, 1, bias=True), 
             nn.SiLU(),
-            nn.Conv2d(c//r, c, 1, bias=True),
+            nn.Conv2d(c//r, c, 1, bias=True), 
             nn.Sigmoid()
         )
     def forward(self, x): return x * self.seq(x)
 
 class DenseLayer(nn.Module):
-    def __init__(self, in_ch, k, p_drop=0.0):
+    def __init__(self, in_ch, p_drop=0.2):
         super().__init__()
         inter = 4 * k
         self.seq = nn.Sequential(
@@ -161,25 +162,24 @@ class DenseLayer(nn.Module):
             nn.BatchNorm2d(inter),
             nn.SiLU(),
             nn.Conv2d(inter, k, 3, padding=1, bias=False),
-            nn.Dropout(p_drop) if p_drop > 0 else nn.Identity(),
+            nn.Dropout(p_drop)
         )
-        self.k = k
     def forward(self, x): return torch.cat([x, self.seq(x)], dim=1)
 
 class DenseBlock(nn.Module):
-    def __init__(self, n_layers, in_ch, k, p_drop=0.0):
+    def __init__(self, n_layers, in_ch):
         super().__init__()
         layers = []
         ch = in_ch
         for _ in range(n_layers):
-            layers.append(DenseLayer(ch, k, p_drop))
+            layers.append(DenseLayer(ch))
             ch += k
         self.block = nn.Sequential(*layers)
         self.out_ch = ch
     def forward(self, x): return self.block(x)
 
 class Transition(nn.Module):
-    def __init__(self, in_ch, compression_factor=0.5, pool_kernel=(1,2), pool_stride=(1,2)):
+    def __init__(self, in_ch):
         super().__init__()
         out_ch = int(in_ch * compression_factor)
         self.out_ch = out_ch
@@ -187,59 +187,13 @@ class Transition(nn.Module):
             nn.BatchNorm2d(in_ch),
             nn.SiLU(),
             nn.Conv2d(in_ch, out_ch, 1, bias=False),
-            nn.AvgPool2d(kernel_size=pool_kernel, stride=pool_stride),
+            nn.AvgPool2d(kernel_size=(1,2), stride=(1,2)),
         )
     def forward(self, x): return self.seq(x)
-
-class TailBase(nn.Module):
-    def __init__(self, ch):
-        super().__init__()
-        self.seq = nn.Sequential(
-            nn.Conv2d(ch, ch, 3, padding=(1,2), dilation=(1,2), groups=ch, bias=False),
-            nn.SiLU(),
-            nn.Conv2d(ch, ch, 1, bias=False),
-        )
-    def forward(self, x): return self.seq(x)
-
-class TailMSD(nn.Module):
-    """Мульти-дилатация + residual."""
-    def __init__(self, ch):
-        super().__init__()
-        self.br1 = nn.Conv2d(ch, ch, 3, padding=1, groups=ch, bias=False)
-        self.br2 = nn.Conv2d(ch, ch, 3, padding=(1,2), dilation=(1,2), groups=ch, bias=False)
-        self.br3 = nn.Conv2d(ch, ch, 3, padding=(1,3), dilation=(1,3), groups=ch, bias=False)
-        self.pw  = nn.Conv2d(3*ch, ch, 1, bias=False)
-        self.act = nn.SiLU()
-    def forward(self, x):
-        y = torch.cat([self.br1(x), self.br2(x), self.br3(x)], dim=1)
-        y = self.pw(self.act(y))
-        return x + y
-
-class AttnPool(nn.Module):
-    def __init__(self, ch):
-        super().__init__()
-        self.attn = nn.Conv2d(ch, 1, 1, bias=True)
-    def forward(self, x):  # x: (B,C,T,F)
-        w = torch.softmax(self.attn(x).flatten(2), dim=-1).unsqueeze(1)  # (B,1,TF)
-        h = x.flatten(2)                                                 # (B,C,TF)
-        z = (w * h).sum(dim=-1)                                         # (B,C)
-        return z
 
 class SpectroDenseNet(nn.Module):
-    def __init__(
-        self,
-        in_channels=3,
-        k=32,
-        compression_factor=0.5,
-        layers_per_block=(6,12,24,16),
-        tail_type="msd",            # "base" | "msd"
-        use_attn_pool=True,
-        p_drop=0.2
-    ):
+    def __init__(self):
         super().__init__()
-        self.k = k
-        self.compression_factor = compression_factor
-
         self.stem = nn.Sequential(
             nn.Conv2d(in_channels, 64, kernel_size=(3,7), stride=(1,2), padding=(1,3), bias=False),
             nn.BatchNorm2d(64),
@@ -248,41 +202,39 @@ class SpectroDenseNet(nn.Module):
         ch = 64
         blocks = []
         for idx, n in enumerate(layers_per_block):
-            db = DenseBlock(n, ch, k, p_drop=p_drop);  ch = db.out_ch
+            db = DenseBlock(n, ch);  ch = db.out_ch
             blocks.append(db)
             blocks.append(SE(ch))
             if idx != len(layers_per_block) - 1:
-                tr = Transition(ch, compression_factor); ch = tr.out_ch
+                tr = Transition(ch); ch = tr.out_ch
                 blocks.append(tr)
         self.features = nn.Sequential(*blocks)
 
         self.norm = nn.BatchNorm2d(ch)
         self.act  = nn.SiLU()
 
-        self.tail = TailBase(ch) if tail_type == "base" else TailMSD(ch)
+        # хвост: увеличиваем поле зрения по частоте (dilated depthwise)
+        self.tail = nn.Sequential(
+            nn.Conv2d(ch, ch, 3, padding=(1,2), dilation=(1,2), groups=ch, bias=False),
+            nn.SiLU(),
+            nn.Conv2d(ch, ch, 1, bias=False),
+        )
 
-        if use_attn_pool:
-            self.head = nn.Sequential(
-                AttnPool(ch),
-                nn.Linear(ch, 1)
-            )
-        else:
-            self.head = nn.Sequential(
-                nn.AdaptiveAvgPool2d(1),
-                nn.Flatten(),
-                nn.Linear(ch, 1)
-            )
+        self.head = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(ch, 1)
+        )
 
         with torch.no_grad():
-            if isinstance(self.head[-1], nn.Linear):
-                self.head[-1].bias.fill_(0.0)
+            self.head[-1].bias.fill_(0.0)
 
     def forward(self, x):
         x = self.stem(x)
         x = self.features(x)
         x = self.act(self.norm(x))
         x = self.tail(x)
-        return self.head(x)
+        return self.head(x) 
 
 # ──────────────────────────────────────────────────────────
 # Чекпоинты: чистое сохранение/загрузка
@@ -339,7 +291,7 @@ def main():
     # Глобальные константы / seed
     SEED       = args.seed
     SPLIT_HZ   = float(args.split_hz)
-    BETA_ALL   = 2.0
+    BETA_ALL   = 1.0
     BETA_LO    = 3.0
     BETA_HI    = 2.0
     DELTA_F    = 0.01
@@ -442,7 +394,15 @@ def main():
         split_hz=SPLIT_HZ
     )
 
-    num_workers = max(os.cpu_count() // 2, 2)
+    start_method = mp.get_start_method(allow_none=True)
+    if (start_method is None) and (os.name == "nt"):
+        start_method = "spawn"
+
+    num_workers_default = max(os.cpu_count() // 2, 2)
+    #uses_spawn = (start_method == "spawn")
+    uses_spawn = False
+    num_workers = 0 if uses_spawn else num_workers_default
+    print(f"DataLoader workers: start_method={start_method or 'default'} -> num_workers={num_workers}")
     pin_mem = True
 
     # Самплер для балансировки батчей — по жёстким меткам
@@ -511,7 +471,7 @@ def main():
     use_domain_weights = bool(args.use_domain_weights)
     scaler = torch.cuda.amp.GradScaler()
 
-    best_f2, best_path = 0.0, "hdmi_cnn_best_ema.pth"
+    best_f_beta, best_path = 0.0, "hdmi_cnn_best_ema.pth"
 
     def file_sha256(path):
         h = hashlib.sha256()
@@ -538,14 +498,14 @@ def main():
         model.train()
         seen = 0
         for x, *_ in loader:
-            x = x.to(device, non_blocking=True)
+            x = x.to(device, non_blocking=True).to(memory_format=torch.channels_last)
             _ = model(x)
             seen += 1
             if seen >= max_batches: break
         model.eval()
 
 
-    def best_thr_fbeta(y, p, beta=2.0, delta=0.01, default=None):
+    def best_thr_fbeta(y, p, beta=1.0, delta=0.01, default=None):
         y = np.asarray(y); p = np.asarray(p)
         if y.size == 0:
             return (0.5 if default is None else float(default)), float("nan")
@@ -576,9 +536,9 @@ def main():
         P  = TP / (TP + FP + 1e-9)
         R  = TP / (TP + FN + 1e-9)
         F1 = 2*P*R/(P+R+1e-9)
-        beta=2.0
-        F2 = (1+beta**2)*P*R/(beta**2*P+R+1e-9)
-        return P, R, F1, F2
+        beta=1.0
+        F_beta = (1+beta**2)*P*R/(beta**2*P+R+1e-9)
+        return P, R, F1, F_beta
         
     # перед эпохами
     def lambda_schedule(epoch, total, start=0.9, end=0.5):
@@ -625,7 +585,7 @@ def main():
 
             for x, y_soft, wb, _, y_hard in train_loader:
                 step_in_epoch += 1
-                x = x.to(device, non_blocking=True)
+                x = x.to(device, non_blocking=True).to(memory_format=torch.channels_last)
                 y_soft = y_soft.to(device, non_blocking=True)
                 y_hard = y_hard.to(device, non_blocking=True)
                 wb     = wb.to(device, non_blocking=True)
@@ -635,36 +595,9 @@ def main():
                 y_mix = lam * y_soft + (1.0 - lam) * y_hard
 
                 with torch.autocast(device_type='cuda', dtype=AMP_DTYPE):
-                    logits = model(x)  # допустим [B], [B,1], [B,T], [B,T,1], и т.д.
-
-                    # --- нормализация форм ТОЛЬКО через reshape (или contiguous().view) ---
-                    if logits.ndim == 4:                           # [B, C, T, F]
-                        # схлопнем всё кроме B
-                        logits = logits.float().mean(dim=(1,2,3))  # -> [B]
-                    elif logits.ndim == 3:                         # [B, T, 1] или [B, 1, 1]
-                        if logits.size(-1) == 1:
-                            logits = logits.squeeze(-1)            # [B, T] или [B, 1]
-                        if logits.ndim == 2 and logits.size(1) > 1:
-                            logits = logits.mean(dim=1)            # -> [B]
-                        elif logits.ndim == 2:                     # [B, 1]
-                            logits = logits.reshape(-1)            # -> [B]
-                    elif logits.ndim == 2:                         # [B, 1] или [B, K]
-                        logits = logits.mean(dim=1) if logits.size(1) > 1 else logits.reshape(-1)
-                    else:
-                        logits = logits.reshape(-1)                # -> [B]
-
-                    # цели/веса тоже через reshape (без view)
-                    y = y_mix.to(device, non_blocking=True).float().reshape(-1)   # [B]
-                    w = wb.to(device, non_blocking=True).float().reshape(-1)      # [B]
-                    # sanity checks
-                    assert torch.isfinite(logits).all(), "NaN/Inf in logits"
-                    assert torch.isfinite(y).all(),      "NaN/Inf in targets"
-                    assert torch.isfinite(w).all(),      "NaN/Inf in weights"
-                    assert logits.shape == y.shape == w.shape, (logits.shape, y.shape, w.shape)
-                    y = y.clamp_(0, 1)
-
-                    loss_per = criterion(logits, y)                # [B]
-                    loss = (loss_per * w).mean() if use_domain_weights else loss_per.mean()
+                    logits = model(x).squeeze(1)
+                    loss_per = criterion(logits, y_mix)
+                    loss = (loss_per * wb).mean() if use_domain_weights else loss_per.mean()
 
                 if scaler.is_enabled():
                     scaler.scale(loss).backward()
@@ -720,20 +653,20 @@ def main():
             thr_hi, f_hi = best_thr_fbeta(all_y[ mask_hi], all_prob[ mask_hi],
                                           beta=BETA_HI, delta=DELTA_F, default=thr_lo)
 
-            P, R, F1, F2 = metrics_with_band_thresholds(all_y, all_prob, all_f0, thr_lo, thr_hi, split=SPLIT_HZ)
+            P, R, F1, F_beta = metrics_with_band_thresholds(all_y, all_prob, all_f0, thr_lo, thr_hi, split=SPLIT_HZ)
 
-            print(f"E{epoch:02d}  loss={train_loss:.4f}  F2={F2:.3f}  P={P:.2f} R={R:.2f}  "
+            print(f"E{epoch:02d}  loss={train_loss:.4f}  F_beta={F_beta:.3f}  P={P:.2f} R={R:.2f}  "
                   f"thr_lo={thr_lo:.4f} thr_hi={thr_hi:.4f}  lam={lam_epoch:.2f}")
             mlflow.log_metric("train_loss", train_loss, epoch)
-            mlflow.log_metric("val_F2",     F2,         epoch)
+            mlflow.log_metric("val_F_beta",     F_beta,         epoch)
             mlflow.log_metric("val_P",      P,          epoch)
             mlflow.log_metric("val_R",      R,          epoch)
             mlflow.log_metric("thr_lo",     thr_lo,     epoch)
             mlflow.log_metric("thr_hi",     thr_hi,     epoch)
             mlflow.log_metric("lam_epoch",  lam_epoch,  epoch)
 
-            if F2 > best_f2:
-                best_f2 = F2
+            if F_beta > best_f_beta:
+                best_f_beta = F_beta
                 ckpt = {
                     "state_dict": get_clean_state_dict(ema),   # ← чистые ключи
                     "arch": "SpectroDenseNet",
@@ -825,7 +758,6 @@ def main():
 if __name__ == "__main__":
     from multiprocessing import freeze_support
     freeze_support()
-    import torch.multiprocessing as mp
     try:
         mp.set_start_method("spawn", force=True)
     except RuntimeError:

@@ -1,4 +1,3 @@
-# --- Классификация полученных спектрограмм, нахождение диапазонов сигнала, запись аннотации ---
 import torch, numpy as np, pandas as pd, pathlib
 import torch.nn as nn
 from scipy.ndimage import median_filter
@@ -14,7 +13,7 @@ from collections import OrderedDict
 k                  = 32      # growth-rate
 compression_factor = 0.5
 layers_per_block   = [6, 12, 24, 16]
-in_channels        = 3       # === NEW: два канала (сырой + контраст)
+in_channels        = 3
 
 class SE(nn.Module):
     def __init__(self, c, r=8):
@@ -374,7 +373,7 @@ def safe_load_state_dict(model: nn.Module, path: str, device):
 if __name__ == "__main__":
     init_model()
 
-    result_dir = pathlib.Path(r"C:\Users\user\Desktop\test\case3_fhd60_cab2")
+    result_dir = pathlib.Path(r"C:\Users\user\Desktop\test\case6_fhd120_cab2")
 
     # sanity
     df = pd.read_csv(next(iter(sorted(result_dir.glob("*.csv")))))
