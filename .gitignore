@@ -4,3 +4,5 @@ mlruns
 .ipynb_checkpoints
 mlflow.dbf
 packages
+errors_summary.csv
+errors_indices.npz
