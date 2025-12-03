@@ -50,39 +50,39 @@ class HDMIset(Dataset):
     def __len__(self):  return len(self.y_hard)
 
     def _augment_window(self, x2):
-        # x2: (2, 16, 128)
-        if random.random() < 0.6:
+        # x2: (3, 16, 128)
+        if random.random() < 0.5:
             dt = random.randint(-2, 2)
             if dt != 0: x2 = torch.roll(x2, shifts=dt, dims=-2)  # time
-        if random.random() < 0.6:
+        if random.random() < 0.5:
             df = random.randint(-6, 6)
             if df != 0: x2 = torch.roll(x2, shifts=df, dims=-1)  # freq
-        if random.random() < 0.4:
+        if random.random() < 0.3:
             w_t = random.randint(1, 2)
             t0  = random.randint(0, x2.shape[-2]-w_t)
             x2[:, t0:t0+w_t, :] = 0.0
-        if random.random() < 0.4:
+        if random.random() < 0.3:
             w_f = random.randint(3, 6)
             f0  = random.randint(0, x2.shape[-1]-w_f)
             x2[:, :, f0:f0+w_f] = 0.0
-        if random.random() < 0.8:
+        if random.random() < 0.6:
             x2 = x2 + 0.02 * torch.randn_like(x2)
         # baseline drift по частоте (широкополосный, как «пузырь»)
-        if random.random() < 0.6:
+        if random.random() < 0.5:
             F = x2.shape[-1]
             f = torch.linspace(0, 1, F, device=x2.device)
             drift = (0.15 * (torch.sin(2*3.1415*(random.uniform(0.2,0.6)*f + random.random())))).view(1,1,-1)
             x2 = x2 + drift
 
         # редкие импульсы (по времени) — мимик шум-тык
-        if random.random() < 0.4:
+        if random.random() < 0.3:
             k = random.randint(1, 3)
             for _ in range(k):
                 t = random.randrange(x2.shape[-2])
                 x2[:, t:t+1, :] += 0.5*torch.randn(1,1,x2.shape[-1], device=x2.device)
 
         # «штрихи» по частоте (тонкие вертикальные полоски)
-        if random.random() < 0.5:
+        if random.random() < 0.3:
             k = random.randint(1, 3)
             for _ in range(k):
                 f = random.randrange(x2.shape[-1])
@@ -272,7 +272,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--npz", type=str, default="hdmi_windows_multiclass.npz")
     parser.add_argument("--epochs", type=int, default=12)
-    parser.add_argument("--batch", type=int, default=64)
+    parser.add_argument("--batch", type=int, default=128)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--split_hz", type=float, default=2.5e9)
@@ -576,7 +576,7 @@ def main():
         })
 
         for epoch in range(1, EPOCHS + 1):
-            lam_epoch = lambda_schedule(epoch, EPOCHS, start=0.9, end=0.5)
+            lam_epoch = lambda_schedule(epoch, EPOCHS, start=0.7, end=0.4)
 
             model.train()
             running = 0.0
