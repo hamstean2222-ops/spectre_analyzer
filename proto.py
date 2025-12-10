@@ -169,28 +169,7 @@ def compute_file_stats(amps: np.ndarray):
 
 
 # функция получения диапазонов сигнала
-def detect_ranges(csv_path: pathlib.Path):
-    df = pd.read_csv(csv_path, header=0)
-    freqs = df.columns[1:].astype(float).to_numpy()
-    times = df.iloc[:, 0].astype(float).to_numpy()
-    amps  = df.iloc[:, 1:].astype(float).to_numpy()   # (T,F)
-
-    # ← новое: статистики по файлу для согласованной нормализации
-    stats = compute_file_stats(amps)
-
-    score = np.zeros(len(freqs), dtype=float)
-    count = np.zeros_like(freqs, dtype=int)
-
-    for t0 in range(0, len(times) - WIN_T + 1, STRIDE_T):
-        for f0 in range(0, len(freqs) - WIN_F + 1, STRIDE_F):
-            x = make_batch(amps, t0, f0, WIN_T, WIN_F, stats=stats, device=device)
-            with torch.no_grad():
-                p = model(x).sigmoid().item()
-            if p > THR_P:
-                f1 = f0 + WIN_F
-                score[f0:f1] += p ** 3
-                count[f0:f1] += 1
-                
+def detect_ranges(freqs: np.ndarray, score: np.ndarray, count: np.ndarray):
     # средняя вероятность по каждому бину
     with np.errstate(divide="ignore", invalid="ignore"):
         avg = np.divide(score, count, out=np.zeros_like(score), where=count>0)
@@ -200,8 +179,6 @@ def detect_ranges(csv_path: pathlib.Path):
     bg = np.percentile(avg[~np.isnan(avg)], 60)        # фон по файлу
     bg = min(bg, 0.5)                                  # не даём фону уйти слишком высоко
     avg_adj = np.clip((avg - 0.9*bg) / (1.0 - 0.9*bg + 1e-6), 0.0, 1.0)
-    
-    #ranges = hysteresis_segmentation(avg, freqs)
 
     marked = avg >= THR_BIN
 
@@ -249,20 +226,92 @@ def collect_dataset(root: pathlib.Path):
         init_model()
 
     preds_json = defaultdict(list)
-    
+
     # подпапка, куда кладём *_probs.csv
     probs_dir = root / "probs"
     probs_dir.mkdir(exist_ok=True)
-    
+
+    # предварительно загружаем все CSV и готовим буферы для накопления вероятностей
+    loaded = []
     for csv in sorted(root.glob("*.csv"), key=center_freq_key):
-        df = pd.read_csv(csv, header = 0)
-        ranges, avg = detect_ranges(csv)
-        start_time = float(df.iloc[0, 0])
-        end_time   = float(df.iloc[-1, 0])
-        preds_json[csv.name] = [{"freq_start": a, "freq_end": b, "time_start": start_time, "time_end": end_time, "type": "SIGNAL"} for a, b in ranges]
-        
-        prob_path = probs_dir / f"{csv.stem}_probs.csv"
+        df = pd.read_csv(csv, header=0)
         freqs = df.columns[1:].astype(float).to_numpy()
+        times = df.iloc[:, 0].astype(float).to_numpy()
+        amps  = df.iloc[:, 1:].astype(float).to_numpy()
+
+        loaded.append({
+            "path": csv,
+            "df": df,
+            "freqs": freqs,
+            "times": times,
+            "amps": amps,
+            "stats": compute_file_stats(amps),
+            "score": np.zeros_like(freqs, dtype=float),
+            "count": np.zeros_like(freqs, dtype=int),
+        })
+
+    # проходим окнами по каждому файлу, при нехватке бинов добираем из следующего
+    for idx, data in enumerate(loaded):
+        next_data = loaded[idx + 1] if idx + 1 < len(loaded) else None
+
+        t, f, a = data["times"], data["freqs"], data["amps"]
+        stats = data["stats"]
+
+        for t0 in range(0, len(t) - WIN_T + 1, STRIDE_T):
+            f0 = 0
+            while f0 < len(f):
+                f1 = f0 + WIN_F
+                use_next = f1 > len(f)
+
+                if not use_next:
+                    win_a = a[t0:t0 + WIN_T, f0:f1]
+                    win_stats = stats
+                else:
+                    if next_data is None:
+                        break
+                    missing = f1 - len(f)
+
+                    # высоты обоих файлов должны покрывать окно
+                    if len(next_data["times"]) < t0 + WIN_T:
+                        break
+                    if len(next_data["freqs"]) < missing:
+                        break
+
+                    nf, na = next_data["freqs"], next_data["amps"]
+                    win_a = np.concatenate([
+                        a[t0:t0 + WIN_T, f0:],
+                        na[t0:t0 + WIN_T, :missing],
+                    ], axis=1)
+                    win_stats = compute_file_stats(win_a)
+
+                x = make_batch(win_a, 0, 0, WIN_T, WIN_F, stats=win_stats, device=device)
+                with torch.no_grad():
+                    p = model(x).sigmoid().item()
+
+                if p > THR_P:
+                    p3 = p ** 3
+                    if not use_next:
+                        data["score"][f0:f1] += p3
+                        data["count"][f0:f1] += 1
+                    else:
+                        missing = f1 - len(f)
+                        data["score"][f0:] += p3
+                        data["count"][f0:] += 1
+
+                        data_next = loaded[idx + 1]
+                        data_next["score"][:missing] += p3
+                        data_next["count"][:missing] += 1
+
+                f0 += STRIDE_F
+
+    for data in loaded:
+        freqs = data["freqs"]
+        ranges, avg = detect_ranges(freqs, data["score"], data["count"])
+        start_time = float(data["df"].iloc[0, 0])
+        end_time   = float(data["df"].iloc[-1, 0])
+        preds_json[data["path"].name] = [{"freq_start": a, "freq_end": b, "time_start": start_time, "time_end": end_time, "type": "SIGNAL"} for a, b in ranges]
+
+        prob_path = probs_dir / f"{data['path'].stem}_probs.csv"
         save_avg_csv(freqs, avg, prob_path)
         print(f"Saved probs → {prob_path.name}")
 
